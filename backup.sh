@@ -2,7 +2,7 @@
 
 # BEGIN CONFIGURATION ==========================================================
 
-BACKUP_DIR="/home/alextran/backups"  # The directory in which you want backups placed
+BACKUP_DIR="/home/alextran/web-server-backup"  # The directory in which you want backups placed
 
 DUMP_MYSQL=true
 KEEP_MYSQL="14" # How many days worth of mysql dumps to keep
