@@ -2,36 +2,16 @@
 
 # BEGIN CONFIGURATION ==========================================================
 
-BACKUP_DIR="/backups/site_backups"  # The directory in which you want backups placed
-DUMP_MYSQL=true
-TAR_SITES=false
-SYNC="none" # Either 's3sync', 'rsync', or 'none'
-KEEP_MYSQL="14" # How many days worth of mysql dumps to keep
-KEEP_SITES="2" # How many days worth of site tarballs to keep
+BACKUP_DIR="/home/alextran/backups"  # The directory in which you want backups placed
 
-MYSQL_HOST="localhost"
-MYSQL_USER="root"
-MYSQL_PASS=""
+DUMP_MYSQL=true
+KEEP_MYSQL="14" # How many days worth of mysql dumps to keep
 MYSQL_BACKUP_DIR="$BACKUP_DIR/mysql/"
 
-SITES_DIR="/var/www/sites/"
+TAR_SITES=true
+KEEP_SITES="2" # How many days worth of site tarballs to keep
 SITES_BACKUP_DIR="$BACKUP_DIR/sites/"
-
-
-# See s3sync info in README
-S3SYNC_PATH="/usr/local/s3sync/s3sync.rb"
-S3_BUCKET="my-fancy-bucket"
-AWS_ACCESS_KEY_ID="YourAWSAccessKey" # Log in to your Amazon AWS account to get this
-AWS_SECRET_ACCESS_KEY="YourAWSSecretAccessKey" # Log in to your Amazon AWS account to get this
-USE_SSL="true"
-SSL_CERT_DIR="/etc/ssl/certs" # Where your Cert Authority keys live; for verification
-SSL_CERT_FILE="" # If you have just one PEM file for CA verification
-
-# If you don't want to use S3, you can rsync to another server
-RSYNC_USER="user"
-RSYNC_SERVER="other.server.com"
-RSYNC_DIR="web_site_backups"
-RSYNC_PORT="22" # Change this if you've customized the SSH port of your backup system
+SITES_DIR="/var/www/"
 
 # You probably won't have to change these
 THE_DATE="$(date '+%Y-%m-%d')"
@@ -40,11 +20,8 @@ MYSQL_PATH="$(which mysql)"
 MYSQLDUMP_PATH="$(which mysqldump)"
 FIND_PATH="$(which find)"
 TAR_PATH="$(which tar)"
-RSYNC_PATH="$(which rsync)"
 
 # END CONFIGURATION ============================================================
-
-
 
 # Announce the backup time
 echo "Backup Started: $(date)"
@@ -68,13 +45,13 @@ if [ "$DUMP_MYSQL" = "true" ]
 
   # Get a list of mysql databases and dump them one by one
   echo "------------------------------------"
-  DBS="$($MYSQL_PATH -h $MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS -Bse 'show databases')"
+  DBS="$($MYSQL_PATH -Bse 'show databases')"
   for db in $DBS
   do
     if [[ $db != "information_schema" && $db != "mysql" && $db != "performance_schema" ]]
       then
       echo "Dumping: $db..."
-      $MYSQLDUMP_PATH --opt --skip-add-locks -h $MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS $db | gzip > $MYSQL_BACKUP_DIR$db\_$THE_DATE.sql.gz
+      $MYSQLDUMP_PATH --opt --skip-add-locks $db | gzip > $MYSQL_BACKUP_DIR$db\_$THE_DATE.sql.gz
     fi
   done
 
@@ -96,8 +73,11 @@ if [ "$TAR_SITES" == "true" ]
   cd $SITES_DIR
   for d in *
   do
-    echo "Archiving $d..."
-    $TAR_PATH --exclude="*/log" -C $SITES_DIR -czf $SITES_BACKUP_DIR/$d\_$THE_DATE.tgz $d
+      if [[ $d != "22222" && $d != "html" ]]
+      then
+      echo "Archiving $d..."
+      $TAR_PATH -C $SITES_DIR -czf $SITES_BACKUP_DIR/$d\_$THE_DATE.tgz $d
+    fi
   done
 
   # Delete old site backups
@@ -108,31 +88,6 @@ if [ "$TAR_SITES" == "true" ]
   # Delete files older than specified number of days
   $FIND_PATH $SITES_BACKUP_DIR*.tgz -mtime +$KEEP_SITES -exec rm {} +
 
-fi
-
-# Rsync everything with another server
-if [[ "$SYNC" == "rsync" ]]
-  then
-  echo "------------------------------------"
-  echo "Sending backups to backup server..."
-  $RSYNC_PATH --del -vaze "ssh -p $RSYNC_PORT" $BACKUP_DIR/ $RSYNC_USER@$RSYNC_SERVER:$RSYNC_DIR
-
-# OR s3sync everything with Amazon S3
-elif [[ "$SYNC" == "s3sync" ]]
-  then
-  export AWS_ACCESS_KEY_ID
-  export AWS_SECRET_ACCESS_KEY
-  export SSL_CERT_DIR
-  export SSL_CERT_FILE
-  if [[ $USE_SSL == "true" ]]
-    then
-    SSL_OPTION=' --ssl '
-    else
-    SSL_OPTION=''
-  fi
-  echo "------------------------------------"
-  echo "Sending backups to s3..."
-  $S3SYNC_PATH --delete -v $SSL_OPTION -r $BACKUP_DIR/ $S3_BUCKET:backups
 fi
 
 # Announce the completion time
