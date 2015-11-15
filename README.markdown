@@ -7,3 +7,8 @@ Configured for this setup:
 * Ubuntu 14.04 x64
 * Security managed by [ServerPilot](https://serverpilot.io/)
 * Hosted by [DigitalOcean](https://www.digitalocean.com/)
+
+### Changes
+
+* Removed syncing features (not needed).
+* Removed use of MySQL username/password in the script. Authentication replaced with `.my.cnf` file.
