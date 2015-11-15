@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
+MAILTO=
+HOME=/root/
+
+0 3 * * * /root/web-server-backup/full_backup > /dev/null

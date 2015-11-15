@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
 MAILTO=someone@example.com
-HOME=/home/alextran
+HOME=/root
 
-0 3 * * * sudo /home/alextran/web-server-backup/backup.sh > /dev/null
+00 3 * * * root /usr/local/web-server-backup/mysql_backup > /dev/null
